@@ -1,0 +1,4 @@
+Para fabricar no JLCPCB upe a pasta Placa_PCB_Teclado_Braile-RV0.zip de dentro da pasta production/. 
+Lá dentro também tem outros arquivos para fabricação em geral que imagino que não serão usados.
+
+O projeto está em src/ e pode ser aberto pelo Kicad.
