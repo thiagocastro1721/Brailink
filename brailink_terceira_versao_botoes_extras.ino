@@ -30,8 +30,87 @@ struct BrailleMap {
 };
 
 const BrailleMap letters[] = {
-  {{1,0,0,0,0,0}, KEY_A, false}, {{1,1,0,0,0,0}, KEY_B, false},
-  // ... continuar com os demais
+  {{1,0,0,0,0,0}, KEY_A, false, false, 0}, {{1,1,0,0,0,0}, KEY_B, false, false, 0},
+  {{1,0,0,1,0,0}, KEY_C, false, false, 0}, {{1,0,0,1,1,0}, KEY_D, false, false, 0},
+  {{1,0,0,0,1,0}, KEY_E, false, false, 0}, {{1,1,0,1,0,0}, KEY_F, false, false, 0},
+  {{1,1,0,1,1,0}, KEY_G, false, false, 0}, {{1,1,0,0,1,0}, KEY_H, false, false, 0},
+  {{0,1,0,1,0,0}, KEY_I, false, false, 0}, {{0,1,0,1,1,0}, KEY_J, false, false, 0},
+  {{1,0,1,0,0,0}, KEY_K, false, false, 0}, {{1,1,1,0,0,0}, KEY_L, false, false, 0},
+  {{1,0,1,1,0,0}, KEY_M, false, false, 0}, {{1,0,1,1,1,0}, KEY_N, false, false, 0},
+  {{1,0,1,0,1,0}, KEY_O, false, false, 0}, {{1,1,1,1,0,0}, KEY_P, false, false, 0},
+  {{1,1,1,1,1,0}, KEY_Q, false, false, 0}, {{1,1,1,0,1,0}, KEY_R, false, false, 0},
+  {{0,1,1,1,0,0}, KEY_S, false, false, 0}, {{0,1,1,1,1,0}, KEY_T, false, false, 0},
+  {{1,0,1,0,0,1}, KEY_U, false, false, 0}, {{1,1,1,0,0,1}, KEY_V, false, false, 0},
+  {{0,1,0,1,1,1}, KEY_W, false, false, 0}, {{1,0,1,1,0,1}, KEY_X, false, false, 0},
+  {{1,0,1,1,1,1}, KEY_Y, false, false, 0}, {{1,0,1,0,1,1}, KEY_Z, false, false, 0}
+};
+
+// Caracteres especiais (ç e acentos portugueses)
+const BrailleMap specialChars[] = {
+  // ç
+  {{1,1,1,1,0,1}, 0, false, true, 231},    // (Alt+0231)
+  
+  // é  
+  {{1,1,1,1,1,1}, 0, false, true, 233},    // (Alt+0233)
+  
+  // á
+  {{1,1,1,0,1,1}, 0, false, true, 225},    // (Alt+0225)
+  
+  // è
+  {{0,1,1,1,0,1}, 0, false, true, 232},    // (Alt+0232)
+  
+  // ú
+  {{0,1,1,1,1,1}, 0, false, true, 250},    // (Alt+0250)
+  
+  // â
+  {{1,0,0,0,0,1}, 0, false, true, 226},    // (Alt+0226)
+  
+  // ê
+  {{1,1,0,0,0,1}, 0, false, true, 234},    // (Alt+0234)
+  
+  // ô
+  {{1,0,0,1,1,1}, 0, false, true, 244},    // (Alt+0244)
+  
+  // @
+  {{1,0,0,0,1,1}, KEY_2, true, false, 0},  // (Shift+2)
+  
+  // à
+  {{1,1,0,1,0,1}, 0, false, true, 224},    // (Alt+0224)
+  
+  // õ 
+  {{0,1,0,1,0,1}, 0, false, true, 245},    // (Alt+0245)
+
+  // í 
+  {{0,0,1,1,0,0}, 0, false, true, 237},    // (Alt+0237)
+
+  // ó 
+  {{0,0,1,1,0,1}, 0, false, true, 243},    // (Alt+0243)
+
+  // ã 
+  {{0,0,1,1,1,0}, 0, false, true, 227},    // (Alt+0227)
+};
+
+// Símbolos de pontuação
+const BrailleMap symbols[] = {
+  {{0,0,1,0,0,0}, KEY_DOT, false, false, 0},   // . ponto
+  {{0,1,0,0,0,0}, KEY_COMMA, false, false, 0}, // , vírgula
+  {{0,1,1,0,0,0}, 0, false, true, 59},         // ; ponto e vírgula
+  {{0,1,0,0,1,0}, 0, false, true, 58},         // : dois pontos (Alt+58)
+  {{0,1,0,0,0,1}, 0, false, true, 63},         // ? interrogação - Alt+63
+  {{0,0,0,1,0,0}, KEY_MINUS, false, false, 0}, // . menos
+  {{0,0,1,0,0,1}, KEY_MINUS, false, false, 0}, // - hífen
+  {{0,1,1,0,1,0}, 0, false, true, 33}          // ! exclamação (Alt+33)
+};
+
+// Mapeamento de números (0-9)
+const BrailleMap numbers[] = {
+  {{1,0,0,0,0,0}, KEY_1, false, false, 0}, {{1,1,0,0,0,0}, KEY_2, false, false, 0},
+  {{1,0,0,1,0,0}, KEY_3, false, false, 0}, {{1,0,0,1,1,0}, KEY_4, false, false, 0},
+  {{1,0,0,0,1,0}, KEY_5, false, false, 0}, {{1,1,0,1,0,0}, KEY_6, false, false, 0},
+  {{1,1,0,1,1,0}, KEY_7, false, false, 0}, {{1,1,0,0,1,0}, KEY_8, false, false, 0},
+  {{0,1,0,1,0,0}, KEY_9, false, false, 0}, {{0,1,0,1,1,0}, KEY_0, false, false, 0}
+};
+
 };
 
 // Funções auxiliares
