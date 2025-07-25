@@ -111,7 +111,6 @@ const BrailleMap numbers[] = {
   {{0,1,0,1,0,0}, KEY_9, false, false, 0}, {{0,1,0,1,1,0}, KEY_0, false, false, 0}
 };
 
-};
 
 // Funções auxiliares
 bool debounce(int pin, bool &last, unsigned long &time) {
