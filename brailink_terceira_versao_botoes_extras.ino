@@ -11,6 +11,7 @@ KeyboardDevice* kbd;
 const int pins[] = {18, 4, 19, 32, 25, 15};
 const int btnBack = 22, btnSpace = 21, btnEnter = 14;
 const int btnUp = 16, btnDown = 26, btnLeft = 17, btnRight = 27;
+const int btnVolumeUp = 13, btnVolumeDown = 12, btnReading = 33, btnPrint = 23;
 
 // Estados e configuração de debounce
 struct Button {
@@ -19,8 +20,8 @@ struct Button {
 };
 
 Button btns[6];
-bool lastSpace = HIGH, lastBack = HIGH, lastEnter = HIGH, lastUp = HIGH, lastDown = HIGH, lastLeft = HIGH, lastRight = HIGH;
-unsigned long timeSpace = 0, timeBack = 0, timeEnter = 0, timeUp = 0, timeDown = 0, timeLeft = 0, timeRight = 0;
+bool lastSpace = HIGH, lastBack = HIGH, lastEnter = HIGH, lastUp = HIGH, lastDown = HIGH, lastLeft = HIGH, lastRight = HIGH, lastVolumeUp = HIGH, lastVolmeDown = HIGH, lastReading = HIGH, lastPrint = HIGH;
+unsigned long timeSpace = 0, timeBack = 0, timeEnter = 0, timeUp = 0, timeDown = 0, timeLeft = 0, timeRight = 0, timeVolumeUp = 0, timeVolumeDown = 0, timeReading = 0, timePrint = 0;
 
 // Mapeamento Braille (exemplo: letras a-z)
 struct BrailleMap {
@@ -192,6 +193,10 @@ void setup() {
   pinMode(btnDown, INPUT_PULLUP);
   pinMode(btnLeft, INPUT_PULLUP);
   pinMode(btnRight, INPUT_PULLUP);
+  pinMode(btnVolumeUp, INPUT_PULLUP);
+  pinMode(btnVolumeDown, INPUT_PULLUP);
+  pinMode(btnReading, INPUT_PULLUP);
+  pinMode(btnPrint, INPUT_PULLUP); 
 }
 
 // Loop
@@ -237,6 +242,10 @@ void loop() {
   if (debounce(btnDown, lastDown, timeDown)) sendKey(KEY_DOWN_ARROW);
   if (debounce(btnLeft, lastLeft, timeLeft)) sendKey(KEY_LEFT_ARROW);
   if (debounce(btnRight, lastRight, timeRight)) sendKey(KEY_RIGHT_ARROW);
+  if (debounce(btnVolumeUp, lastVolumeUp, timeVolumeUp)) sendKey(KEY_VOLUME_UP);
+  if (debounce(btnVolumeDown, lastVolumeDown, timeVolumeDown)) sendKey(KEY_VOLUME_DOWN);
+  if (debounce(btnReading, lastReading, timeReading)) sendKey(KEY_READING);
+  if (debounce(btnPrint, lastPrint, timePrint)) sendKey(KEY_PRINT);
 
 
   delay(5);
