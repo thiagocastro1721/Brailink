@@ -20,7 +20,7 @@ struct Button {
 
 Button btns[6];
 bool lastSpace = HIGH, lastBack = HIGH, lastEnter = HIGH, lastUp = HIGH, lastDown = HIGH, lastLeft = HIGH, lastRight = HIGH;
-unsigned long timeSpace = 0, timeBack = 0, timeEnter = 0 timeUp = 0, timeDown = 0, timeLeft = 0, timeRight = 0;
+unsigned long timeSpace = 0, timeBack = 0, timeEnter = 0, timeUp = 0, timeDown = 0, timeLeft = 0, timeRight = 0;
 
 // Mapeamento Braille (exemplo: letras a-z)
 struct BrailleMap {
