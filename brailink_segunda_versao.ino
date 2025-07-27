@@ -2,26 +2,23 @@
 #include <KeyboardDevice.h>
 #include <BleCompositeHID.h>
 #include <KeyboardHIDCodes.h>
-#include <SoftwareSerial.h>
-#include <DFRobotDFPlayerMini.h>
 
-// Configuração DFPlayer Mini
-SoftwareSerial mySoftwareSerial(27, 26); // RX, TX
-DFRobotDFPlayerMini myDFPlayer;
-int currentVolume = 15; // Volume inicial (0-30)
-
-BleCompositeHID ble("TecladoBraille", "Maker", 100);
+BleCompositeHID ble("Teclado Brailink", "Maker", 100);
 KeyboardDevice* kbd;
 
 // Pinos dos botões originais
-const int pins[] = {18, 4, 19, 32, 25, 15}; // P1-P6
-const int btnBack = 22, btnSpace = 21, btnEnter = 14;
+const int pins[] = {18, 5, 17, 19, 21, 22}; // P1-P6 (TX2, D5, D18, D19, D21, D22)
+const int btnBack = 12, btnSpace = 27, btnEnter = 16;
 
 // Novos pinos dos botões de controle
-const int btnVolumeUp = 13;
-const int btnVolumeDown = 12;
-const int btnReading = 33;
-const int btnPrint = 23;
+const int btnVolumeUp = 32;
+const int btnVolumeDown = 33;
+const int btnReading = 26;    // Narrador
+const int btnPrint = 25;
+const int btnDirUp = 14;      // Novo: Direcional cima
+const int btnDirDown = 23;    // Novo: Direcional baixo  
+const int btnDirLeft = 13;    // Novo: Direcional esquerda
+const int btnDirRight = 4;    // Novo: Direcional direita
 
 // Variáveis para deep sleep e controle de botão longo
 unsigned long volumeDownPressTime = 0;
@@ -42,9 +39,12 @@ const int MAX_RECONNECTION_ATTEMPTS = 1; // Máximo 1 tentativa
 //Variaveis para inatividade ou desconexao prolongada
 unsigned long lastActivityTime = 0;
 unsigned long lastKeyPressTime = 0;
-const unsigned long INACTIVITY_SLEEP_TIMEOUT = 120000; // 2 minutos sem atividade
+//const unsigned long INACTIVITY_SLEEP_TIMEOUT = 120000; // 2 minutos sem atividade
+const unsigned long INACTIVITY_SLEEP_TIMEOUT = 3600000; // 1 hora sem atividade
 const unsigned long DISCONNECTION_SLEEP_TIMEOUT = 60000; // 1 minuto sem conexão
 bool autoSleepEnabled = true;
+bool lastDirUp = HIGH, lastDirDown = HIGH, lastDirLeft = HIGH, lastDirRight = HIGH;
+unsigned long timeDirUp = 0, timeDirDown = 0, timeDirLeft = 0, timeDirRight = 0;
 
 bool justWokeUp = false;
 
@@ -202,82 +202,6 @@ bool matchPattern(const uint8_t* pattern, const uint8_t* combo) {
   return true;
 }
 
-// Função para tocar áudio das letras (pasta 01)
-void playLetterAudio(int letterIndex) {
-  // letterIndex: 0=A, 1=B, ..., 25=Z
-  // Arquivos na pasta 01: 001.mp3 a 026.mp3
-  myDFPlayer.playFolder(1, letterIndex + 1);
-  Serial.printf("Tocando áudio da letra: pasta 01, arquivo %03d\n", letterIndex + 1);
-}
-
-// Função para tocar áudio dos números (pasta 02)
-void playNumberAudio(int numberIndex) {
-  // numberIndex: 0=número 0, 1=número 1, ..., 9=número 9
-  // Arquivos na pasta 02: 001.mp3 a 010.mp3
-  myDFPlayer.playFolder(2, numberIndex + 1);
-  Serial.printf("Tocando áudio do número: pasta 02, arquivo %03d\n", numberIndex + 1);
-}
-
-// Função para aumentar volume
-void increaseVolume() {
-  myDFPlayer.playFolder(3, 15); // Toca áudio "03/015"
-  delay(100);
-  
-  currentVolume += 5;
-  if (currentVolume > 30) currentVolume = 30;
-  
-  myDFPlayer.volume(currentVolume);
-  Serial.printf("Volume aumentado para: %d/30\n", currentVolume);
-}
-
-//Função para diminuir volume
-void decreaseVolume() {
-  if (volumeDownLongPress) {
-    // Se foi long press, entrar em deep sleep
-    enterDeepSleep();
-    return;
-  }
-  
-  // Comportamento normal de diminuir volume
-  myDFPlayer.playFolder(3, 17); // Toca áudio "03/017"
-  delay(100);
-  
-  currentVolume -= 5;
-  if (currentVolume < 0) currentVolume = 0;
-  
-  myDFPlayer.volume(currentVolume);
-  Serial.printf("Volume diminuído para: %d/30\n", currentVolume);
-}
-
-// Função para dar boas vindas
-void welcome() {
-  myDFPlayer.playFolder(3, 4); // Toca áudio "03/004"
-  delay(100);
-}
-
-// Função para modo de leitura do Edge
-void activateReading() {
-  myDFPlayer.playFolder(3, 12); // Toca áudio "03/012"
-  delay(500);
-  
-  // Atalho Ctrl+Shift+U para modo de leitura em voz alta no Edge
-  kbd->modifierKeyPress(KEY_MOD_LCTRL | KEY_MOD_LSHIFT);
-  delay(10);
-  kbd->keyPress(KEY_U);
-  delay(50);
-  kbd->keyRelease(KEY_U);
-  delay(10);
-  kbd->modifierKeyRelease(KEY_MOD_LCTRL | KEY_MOD_LSHIFT);
-  
-  Serial.println("Atalho de leitura do Edge ativado: Ctrl+Shift+U");
-}
-
-// Função para impressão
-void activatePrint() {
-  myDFPlayer.playFolder(3, 10); // Toca áudio "03/010"
-  Serial.println("Áudio de impressão reproduzido");
-}
-
 void sendKey(uint8_t key, bool withShift = false) {
   if (key == 0) return;
   updateActivity();
@@ -297,6 +221,82 @@ void sendKey(uint8_t key, bool withShift = false) {
     kbd->keyRelease(key);
     delay(25);
   }
+}
+
+//Função para diminuir volume
+void decreaseVolume() {
+  if (volumeDownLongPress) {
+    enterDeepSleep();
+    return;
+  }
+  else{
+    //sendKey(KEY_VOLUMEDOWN);
+
+    kbd->keyPress(KEY_VOLUMEDOWN);
+    delay(50);
+    kbd->keyRelease(KEY_VOLUMEDOWN);
+    delay(10);
+  }
+  Serial.println("Volume down pressionado (funcionalidade de áudio removida)");
+}
+
+//Função para aumentar volume
+void increaseVolume() {
+  sendKey(KEY_VOLUMEUP);
+  Serial.println("Volume up pressionado");
+}
+
+
+// Função para ativar o Narrador do Windows
+void activateReading() {
+  
+  // Atalho Win+Ctrl+Enter para ativar/desativar o Narrador do Windows
+  kbd->modifierKeyPress(KEY_MOD_LMETA | KEY_MOD_LCTRL);
+  delay(10);
+  kbd->keyPress(KEY_ENTER);
+  delay(50);
+  kbd->keyRelease(KEY_ENTER);
+  delay(10);
+  kbd->modifierKeyRelease(KEY_MOD_LMETA | KEY_MOD_LCTRL);
+  
+  Serial.println("Narrador do Windows ativado/desativado: Win+Ctrl+Enter");
+}
+
+
+// Função para ativar impressão
+void activatePrint() {
+  
+  // Atalho Ctrl+P para abrir diálogo de impressão
+  kbd->modifierKeyPress(KEY_MOD_LCTRL);
+  delay(10);
+  kbd->keyPress(KEY_P);
+  delay(50);
+  kbd->keyRelease(KEY_P);
+  delay(10);
+  kbd->modifierKeyRelease(KEY_MOD_LCTRL);
+  
+  Serial.println("Diálogo de impressão ativado: Ctrl+P");
+}
+
+// Funções das teclas direcionais
+void pressDirectionalUp() {
+  sendKey(KEY_UP);
+  Serial.println("Direcional cima pressionado");
+}
+
+void pressDirectionalDown() {
+  sendKey(KEY_DOWN);
+  Serial.println("Direcional baixo pressionado");
+}
+
+void pressDirectionalLeft() {
+  sendKey(KEY_LEFT);
+  Serial.println("Direcional esquerda pressionado");
+}
+
+void pressDirectionalRight() {
+  sendKey(KEY_RIGHT);
+  Serial.println("Direcional direita pressionado");
 }
 
 void sendAltCode(uint16_t altCode, bool uppercase = false) {
@@ -395,7 +395,6 @@ void processCombo() {
     for (int i = 0; i < 10; i++) {
       if (matchPattern(numbers[i].pattern, combo)) {
         sendKey(numbers[i].key);
-        playNumberAudio(i == 9 ? 0 : i + 1 == 10 ? 0 : i); // Ajustar índice para 0-9
         Serial.printf("Número enviado: %d\n", i == 9 ? 0 : i + 1);
         return;
       }
@@ -450,7 +449,6 @@ void processCombo() {
                     'a' + i, currentMode, useShift ? "SIM" : "NÃO");
       
       sendKey(letters[i].key, useShift);
-      playLetterAudio(i); // Tocar áudio da letra
       
       Serial.printf("Letra enviada: %c%s\n", 'a' + i, useShift ? " (maiúscula)" : "");
       
@@ -474,24 +472,12 @@ void processCombo() {
 
 void enterDeepSleep() {
   Serial.println("Entrando em Deep Sleep...");
-  myDFPlayer.playFolder(3, 7); // Toca áudio de sleep (se tiver)
-  delay(1000);
   
   // Configurar wakeup no botão volume+ (pino 13)
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_13, 0); // Acordar em LOW (botão pressionado)
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_32, 0); // Volume+ agora é D32
   
   // Entrar em deep sleep
   esp_deep_sleep_start();
-}
-
-void playConnectedAudio() {
-  myDFPlayer.playFolder(3, 5); // Toca áudio "03/005" - "conectado!"
-  Serial.println("Áudio 'conectado!' reproduzido");
-}
-
-void playDisconnectedAudio() {
-  myDFPlayer.playFolder(3, 14); // Toca áudio "03/014" - "sem conexão"
-  Serial.println("Áudio 'sem conexão' reproduzido");
 }
 
 void checkBluetoothConnection() {
@@ -506,10 +492,8 @@ void checkBluetoothConnection() {
       
       if (initialConnectionMade) {
         delay(500);
-        playConnectedAudio();
       } else {
         delay(2000);
-        playConnectedAudio();
         initialConnectionMade = true;
       }
     } else {
@@ -517,10 +501,6 @@ void checkBluetoothConnection() {
       Serial.println("=== BLUETOOTH DESCONECTADO ===");
       disconnectionTime = millis();
       disconnectionDetected = true;
-      
-      if (initialConnectionMade) {
-        playDisconnectedAudio();
-      }
     }
     wasConnected = currentlyConnected;
   }
@@ -542,8 +522,6 @@ void checkBluetoothConnection() {
         Serial.println("Parando tentativas automáticas de reconexão.");
         disconnectionDetected = false; // Para de verificar
         
-        // Opcional: tocar áudio de falha na reconexão
-        myDFPlayer.playFolder(3, 16); // Se tiver áudio específico
       }
     }
   }
@@ -560,7 +538,6 @@ void printBluetoothStatus() {
 void processControlButtons() {
   // Verificar botão de leitura
   if (debounce(btnReading, lastReading, timeReading)) {
-    myDFPlayer.playFolder(3, 12); // Só toca áudio quando desconectado
     delay(150);
     return;
   }
@@ -598,7 +575,7 @@ void processControlButtons() {
       Serial.println("Primeira pressão do volume+ ignorada (usado para acordar)");
     } else {
       // Funcionamento normal
-      increaseVolume();
+      increaseVolume(); 
     }
     delay(150);
     return;
@@ -664,11 +641,6 @@ void checkAutoSleep() {
 void toggleAutoSleep() {
   autoSleepEnabled = !autoSleepEnabled;
   Serial.printf("Auto sleep %s\n", autoSleepEnabled ? "habilitado" : "desabilitado");
-  if (autoSleepEnabled) {
-    myDFPlayer.playFolder(3, 8); // Áudio "sleep ativado"
-  } else {
-    myDFPlayer.playFolder(3, 9); // Áudio "sleep desativado"
-  }
 }
 
 // Para usar com combinação de botões específica, adicionar em processCombo():
@@ -704,28 +676,6 @@ void setup() {
   // Aguardar inicialização
   delay(1000);
   
-  // Inicializar DFPlayer Mini
-  mySoftwareSerial.begin(9600);
-  Serial.println("Inicializando DFPlayer Mini...");
-  
-  if (!myDFPlayer.begin(mySoftwareSerial)) {
-    Serial.println("✗ Erro ao inicializar DFPlayer Mini!");
-  } else {
-    Serial.println("✓ DFPlayer Mini inicializado com sucesso!");
-    myDFPlayer.volume(currentVolume);
-    delay(100);
-    
-    // Tocar welcome apenas se acordou do sleep ou boot normal
-    if (wokeFromSleep) {
-      // Se acordou do sleep, tocar áudio específico
-      myDFPlayer.playFolder(3, 4); // Áudio de retorno da hibernação
-      Serial.println("Áudio de retorno da hibernação reproduzido");
-    } else {
-      // Boot normal - tocar welcome
-      welcome();
-    }
-  }
-  
   // Inicializar Bluetooth
   kbd = new KeyboardDevice();
   ble.addDevice(kbd);
@@ -738,7 +688,7 @@ void setup() {
 
   // Mostrar informações de conexão
   Serial.println("=== BLUETOOTH INICIADO ===");
-  Serial.println("Nome do dispositivo: TecladoBraille");
+  Serial.println("Nome do dispositivo: Teclado Brailink");
   Serial.println("Status: Aguardando primeira conexão...");
   
   // Configurar pinos originais
@@ -756,18 +706,24 @@ void setup() {
   pinMode(btnVolumeDown, INPUT_PULLUP);
   pinMode(btnReading, INPUT_PULLUP);
   pinMode(btnPrint, INPUT_PULLUP);
+
+  // Configurar pinos das teclas direcionais
+  pinMode(btnDirUp, INPUT_PULLUP);
+  pinMode(btnDirDown, INPUT_PULLUP);
+  pinMode(btnDirLeft, INPUT_PULLUP);
+  pinMode(btnDirRight, INPUT_PULLUP);
   
   // Garantir que inicia no modo normal
   currentMode = NORMAL;
   
-  Serial.println("=== Teclado Braille iniciado ===");
+  Serial.println("=== Teclado Brailink iniciado ===");
   Serial.println("Modo inicial: NORMAL (minúsculas)");
   Serial.println("Caracteres especiais suportados:");
   Serial.println("ç/Ç, é/É, á/Á, è/È, ú/Ú, â/Â, ê/Ê, ô/Ô, @, à/À, õ/Õ");
   Serial.println("Símbolos: , ; : ? (Alt+63) . ! (Alt+33)");
   Serial.println("Controles de áudio:");
-  Serial.println("D13=Vol+, D12=Vol-, D33=Leitura, D23=Impressão");
-  Serial.printf("Volume inicial: %d/30\n", currentVolume);
+  Serial.println("D32=Vol+, D33=Vol-, D26=Narrador, D25=Impressão");
+  Serial.println("Direcionais: D14=↑, D23=↓, D13=←, D4=→");
   Serial.printf("Estado inicial - currentMode: %d\n", currentMode);
 
   lastActivityTime = millis(); // Inicializar timer de atividade
@@ -866,6 +822,31 @@ void loop() {
       // Funcionamento normal
       increaseVolume();
     }
+    delay(150);
+    return;
+  }
+
+  // Verificar teclas direcionais
+  if (debounce(btnDirUp, lastDirUp, timeDirUp)) {
+    pressDirectionalUp();
+    delay(150);
+    return;
+  }
+
+  if (debounce(btnDirDown, lastDirDown, timeDirDown)) {
+    pressDirectionalDown();
+    delay(150);
+    return;
+  }
+
+  if (debounce(btnDirLeft, lastDirLeft, timeDirLeft)) {
+    pressDirectionalLeft();
+    delay(150);
+    return;
+  }
+
+  if (debounce(btnDirRight, lastDirRight, timeDirRight)) {
+    pressDirectionalRight();
     delay(150);
     return;
   }
